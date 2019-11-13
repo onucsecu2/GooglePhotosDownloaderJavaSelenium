@@ -1,4 +1,5 @@
 
+import java.awt.Color;
 import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -27,6 +28,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.NumberFormat;
 
 import javax.swing.SwingWorker;
 
@@ -110,7 +112,7 @@ public class GPhotoDownloader extends JFrame {
 		        
 		        bar.setMinimum(0);
 		        bar.setMaximum(n);
-		        SaveImage simage=new SaveImage(baseUrl,n,label);
+		        SaveImage simage=new SaveImage(baseUrl,n,label,bar);
 				simage.addPropertyChangeListener(new ProgressListener(bar));
 				simage.execute();
 				 System.out.println("Finished!!!");
@@ -126,6 +128,7 @@ public class GPhotoDownloader extends JFrame {
 		contentPane.add(lblChromedriverexe);
 		
 		bar = new JProgressBar();
+		bar.setForeground(Color.green);
 		bar.setBounds(10, 217, 402, 14);
 		bar.setStringPainted(true);
 		contentPane.add(bar);
@@ -138,14 +141,16 @@ public class GPhotoDownloader extends JFrame {
 class SaveImage extends SwingWorker<Integer, Integer>{
 	
 	private String baseUrl;
+	private JProgressBar bar;
 	private int n;
 	private JLabel label;
 	public boolean err=false;
-	public SaveImage(String url1,int n1,JLabel lb) {
+	public SaveImage(String url1,int n1,JLabel lb,JProgressBar b) {
 		// TODO Auto-generated constructor stub
 		baseUrl=url1;
 		n=n1;
 		label=lb;
+		bar=b;
 	}
 
 	@Override
@@ -163,6 +168,9 @@ class SaveImage extends SwingWorker<Integer, Integer>{
 	        	err=true;
 	        	 System.out.println("prblm ");
 	        	 label.setText("Error!! plz try again ");
+	        	 bar.setForeground(Color.RED);
+	        	 bar.setIndeterminate(true);
+	        	 bar.setStringPainted(false);
 	        	 driver.close();
 	        }
 			for(int i=2,j=1,k=1;k<=n;j++,i++) {
