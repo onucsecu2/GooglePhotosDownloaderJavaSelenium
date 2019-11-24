@@ -1,4 +1,3 @@
-
 import java.awt.Color;
 import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
@@ -31,6 +30,7 @@ import java.nio.file.Paths;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import javax.swing.SwingWorker;
 
@@ -119,6 +119,7 @@ public class GPhotoDownloader extends JFrame {
 		        SaveImage simage=new SaveImage(baseUrl,n,label,bar);
 				simage.addPropertyChangeListener(new ProgressListener(bar,label));
 				simage.execute();
+//		        simage.run();
 				 System.out.println("Finished!!!");
 			}
 		});
@@ -159,13 +160,12 @@ class SaveImage extends SwingWorker<Integer, Integer>{
 		label=lb;
 		bar=b;
 	}
-
 	@Override
-	protected  Integer doInBackground() {
+	protected  Integer doInBackground() throws InterruptedException {
 		// TODO Auto-generated method stub
 			
 			int progress=0;
-			List<Long> urls = new ArrayList<>();
+//			List<String> urls = new ArrayList<>();
 			List<String> base_urls = new ArrayList<>();
 			List<String> img_urls = new ArrayList<>();
 			base_urls.add(baseUrl);
@@ -173,33 +173,35 @@ class SaveImage extends SwingWorker<Integer, Integer>{
 			while(!base_urls.isEmpty()) {
 				k++;
 				WebDriver driver =new ChromeDriver() ;
+				driver.manage().deleteAllCookies();
+				driver.manage().window().fullscreen();
 				String first = base_urls.get(0);
 			 	driver.get(first);
+			 	
 			 	base_urls.remove(0);
+//			 	driver.manage().timeouts().implicitlyWait(0, TimeUnit.MILLISECONDS);
+//			 	boolean exists = driver.findElements( By.id("...") ).size() != 0
+//			 	driver.manage().timeouts().implicitlyWait(3, TimeUnit.SECONDS);
+			 	TimeUnit.MILLISECONDS.sleep(1000);
+			 	driver.navigate().refresh();
+			 	TimeUnit.MILLISECONDS.sleep(2000);
 				WebElement element =null;
-				element =driver.findElement(By.xpath("//*[@id=\"rg_s\"]/div[1]"));
-				if(!element.isDisplayed()) {
+				WebElement ll =driver.findElement(By.cssSelector("#rg_s > div:nth-child(2)"));
+//				#islrg > div.islrc > div:nth-child(1) > a.wXeWr.islib.nfEiy.mM5pbd > div.bRMDJf.islir > img
+				if(ll.isDisplayed()) {
+					element =driver.findElement(By.xpath("//*[@id=\"rg_s\"]/div[1]"));
+				}else {
 					element =driver.findElement(By.xpath("//*[@id=\"islrg\"]/div[1]/div[1]/a[1]/div[1]"));
 				}
 				
+				element.click();
 				
-		        try{
-		        	element.click();
-		        }catch (Exception ex) {
-		        	err=true;
-		        	 System.out.println("prblm ");
-		        	 label.setText("Error!! plz try again ");
-		        	 bar.setForeground(Color.RED);
-		        	 bar.setIndeterminate(true);
-		        	 bar.setStringPainted(false);
-		        	 driver.close();
-		        }
-		        
 				int cnt =0;
 				int i=2;
 				boolean flag=true;
 				String past_url = null;
 				for(;progress<=n;progress++) {	
+//					TimeUnit.MILLISECONDS.sleep(200);
 					WebElement ele=null;
 					try {
 						ele =driver.findElement(By.cssSelector("#irc-ss > div:nth-child("+(i+1)+") > div.irc_t.i30052 > div.Q8Bv4e.irc-rac"));
@@ -226,14 +228,18 @@ class SaveImage extends SwingWorker<Integer, Integer>{
 					WebElement element2 =null;
 					WebElement element3 = null;
 					try {
+						
 						if(flag) 
 							element2=driver.findElement(By.xpath("//*[@id=\"irc-ss\"]/div["+i+"]/div[1]/div[4]/div[1]/a/div/img"));
 						else
 							element2=driver.findElement(By.xpath("//*[@id=\"Sva75c\"]/div/div/div[3]/div[2]/div/div[1]/div[1]/div/div[2]/a/img"));
+					
 						if(flag)
-							element1 = driver.findElement(By.xpath("//*[@id=\"irc-ss\"]/div["+i+"]/div[1]/div[2]"));
+							element1 =ele;// driver.findElement(By.xpath("//*[@id=\"irc-ss\"]/div["+i+"]/div[1]/div[2]"));
 						else
 							element1 = driver.findElement(By.xpath("//*[@id=\"Sva75c\"]/div/div/div[3]/div[2]/div/div[1]/div[1]/div/div[1]/a[2]/div"));
+						
+						
 						if(flag)
 							element3= driver.findElement(By.xpath("//*[@id=\"irc-ss\"]/div["+i+"]/div[2]/div[2]/div/div[1]/a"));
 						else
@@ -249,24 +255,26 @@ class SaveImage extends SwingWorker<Integer, Integer>{
 						// TODO: handle exception
 					}
 					String url = element2.getAttribute("src");
-					
+					System.out.println(url);
 					if(past_url!=null && past_url.equals(url)) {
 						cnt++;
 						if(cnt>3) {
 							break;
 						}
-						element1.click();
+						System.out.print ("before fin");
+				 		element1.click();
+						System.out.print("after Fin\n");
 						continue;
 					}
 					past_url=url;
-					long hc=url.hashCode();   //check if the image is from same location
-					if(urls.contains(hc)) {
-						element1.click();
+					//check if the image is from same location
+					if(img_urls.contains(url)) {
+				 		element1.click();
 						continue;
 					}
-					urls.add(hc);				// if no add to the list and download the image
-					System.out.println(progress);
-					System.out.println(url);
+								// if no add to the list and download the image
+
+	
 			 	
 			 		setProgress(progress*100/n);
 			 		publish(progress);
@@ -287,8 +295,11 @@ class SaveImage extends SwingWorker<Integer, Integer>{
 //			        }
 			 		img_urls.add(url);
 			 		past_url=url;
+					System.out.print ("before");
 			 		element1.click();
+					System.out.print("after\n");
 				}
+				
 				driver.close();
 				if(progress>=n) {
 					break;
@@ -297,7 +308,7 @@ class SaveImage extends SwingWorker<Integer, Integer>{
 			if(err) {
 				label.setText("Error!! plz try again ");
 			}else {
-				label.setText("Alhamdulillah!Now Initiating Download");
+				label.setText("Alhamdulillah! Now Initiating Download");
 				bar.setBackground(Color.orange);
 				bar.setIndeterminate(true);
 			}
@@ -404,4 +415,3 @@ class ProgressListener implements PropertyChangeListener {
 		}
 	}
 }
-
